@@ -43,4 +43,8 @@ class StudentRepository {
   Future<void> deleteStudentById(int id) {
     return _dao?.deleteStudentById(id) ?? Future.value();
   }
+
+  Future<void> updateStudent(Student student) {
+    return _dao?.updateStudent(student) ?? Future.value();
+  }
 }

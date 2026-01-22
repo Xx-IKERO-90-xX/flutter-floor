@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gestion_alumnos/model/entity/Student.dart';
 import 'package:gestion_alumnos/provider/student_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:gestion_alumnos/screens/editstudent_screen.dart';
 
 class StudentsScreen extends StatefulWidget {
   const StudentsScreen({super.key});
@@ -91,6 +92,76 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
+  void _showEditDialog(StudentProvider appProvider, Student student) {
+    // 1. Aquí ya estás asignando el valor inicial correctamente
+    final nameController = TextEditingController(text: student.name);
+    final ageController = TextEditingController(text: student.age.toString());
+
+    showDialog(
+      context: this.context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Edit Student ${student.name}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: nameController,
+              // initialValue: name, <-- ELIMINADO PARA EVITAR EL ERROR
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: 'Enter student name',
+              ),
+              textCapitalization: TextCapitalization.words,
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: ageController,
+              // initialValue: '$age', <-- ELIMINADO PARA EVITAR EL ERROR
+              decoration: const InputDecoration(
+                labelText: 'Age',
+                hintText: 'Enter student age',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              // ... resto de tu lógica de guardado
+              if (nameController.text.isEmpty || ageController.text.isEmpty) {
+                // SnackBar...
+                return;
+              }
+
+              int? ageInput = int.tryParse(ageController.text);
+              if (ageInput == null || ageInput <= 0) {
+                // SnackBar...
+                return;
+              }
+
+              Student newStudent = student.copyWith(
+                name: nameController.text,
+                age: ageInput,
+              );
+
+              await appProvider.updateStudent(newStudent);
+              Navigator.pop(
+                context,
+              ); // Importante cerrar el diálogo al terminar
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Definimos la referencia al provider
@@ -129,32 +200,53 @@ class _StudentsScreenState extends State<StudentsScreen> {
       ),
     );
   }
-}
 
-ListView _creaListViewStudents(
-  List<Student> students,
-  StudentProvider appProvider,
-) {
-  return ListView.separated(
-    itemCount: students.length,
-    separatorBuilder: (context, index) => const Divider(height: 1),
-    itemBuilder: (context, index) {
-      final student = students[index];
-      return ListTile(
-        leading: CircleAvatar(child: Text('${index + 1}')),
-        title: Text(student.name),
-        subtitle: Text('Age: ${student.age}'),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete),
-          onPressed: () async {
-            // Delete the student when the button is pressed
-            await appProvider.deleteStudentById(student.id!);
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text('\${student.name} deleted')));
-          },
-        ),
-      );
-    },
-  );
+  ListView _creaListViewStudents(
+    List<Student> students,
+    StudentProvider appProvider,
+  ) {
+    return ListView.separated(
+      itemCount: students.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final student = students[index];
+        return ListTile(
+          leading: CircleAvatar(
+            child: Image.network(
+              student.imgUrl ??
+                  "https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png?20200919003010",
+            ),
+          ),
+          title: Text(student.name),
+          subtitle: Text('Age: ${student.age}'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () async {
+                  // Delete the student when the button is pressed
+                  await appProvider.deleteStudentById(student.id!);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('\${student.name} deleted')),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FormEditStudent(student),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

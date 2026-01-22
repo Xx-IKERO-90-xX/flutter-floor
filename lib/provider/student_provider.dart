@@ -46,4 +46,8 @@ class StudentProvider with ChangeNotifier {
     await _studentRepository.deleteStudentById(id);
     notifyListeners();
   }
+
+  Future<void> updateStudent(Student student) async {
+    await _studentRepository.updateStudent(student);
+  }
 }

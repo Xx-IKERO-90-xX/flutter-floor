@@ -96,7 +96,7 @@ class _$AppDatabase extends AppDatabase {
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `Student` (`id` INTEGER, `name` TEXT NOT NULL, `age` INTEGER NOT NULL, PRIMARY KEY (`id`))');
+            'CREATE TABLE IF NOT EXISTS `Student` (`id` INTEGER, `name` TEXT NOT NULL, `age` INTEGER NOT NULL, `imgUrl` TEXT, PRIMARY KEY (`id`))');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -121,7 +121,19 @@ class _$StudentDao extends StudentDao {
             (Student item) => <String, Object?>{
                   'id': item.id,
                   'name': item.name,
-                  'age': item.age
+                  'age': item.age,
+                  'imgUrl': item.imgUrl
+                },
+            changeListener),
+        _studentUpdateAdapter = UpdateAdapter(
+            database,
+            'Student',
+            ['id'],
+            (Student item) => <String, Object?>{
+                  'id': item.id,
+                  'name': item.name,
+                  'age': item.age,
+                  'imgUrl': item.imgUrl
                 },
             changeListener);
 
@@ -133,13 +145,16 @@ class _$StudentDao extends StudentDao {
 
   final InsertionAdapter<Student> _studentInsertionAdapter;
 
+  final UpdateAdapter<Student> _studentUpdateAdapter;
+
   @override
   Future<List<Student>> getAllStudents() async {
     return _queryAdapter.queryList('SELECT * FROM Student',
         mapper: (Map<String, Object?> row) => Student(
             id: row['id'] as int?,
             name: row['name'] as String,
-            age: row['age'] as int));
+            age: row['age'] as int,
+            imgUrl: row['imgUrl'] as String?));
   }
 
   @override
@@ -148,7 +163,8 @@ class _$StudentDao extends StudentDao {
         mapper: (Map<String, Object?> row) => Student(
             id: row['id'] as int?,
             name: row['name'] as String,
-            age: row['age'] as int),
+            age: row['age'] as int,
+            imgUrl: row['imgUrl'] as String?),
         queryableName: 'Student',
         isView: false);
   }
@@ -162,5 +178,11 @@ class _$StudentDao extends StudentDao {
   @override
   Future<void> insertStudent(Student student) async {
     await _studentInsertionAdapter.insert(student, OnConflictStrategy.ignore);
+  }
+
+  @override
+  Future<int> updateStudent(Student student) {
+    return _studentUpdateAdapter.updateAndReturnChangedRows(
+        student, OnConflictStrategy.abort);
   }
 }
