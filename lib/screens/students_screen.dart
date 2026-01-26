@@ -17,6 +17,34 @@ class _StudentsScreenState extends State<StudentsScreen> {
     super.initState();
   }
 
+  void _showDeleteConfirm(
+    StudentProvider appProvider,
+    BuildContext context,
+    Student student,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Are you sure that you want to delete this Student?'),
+        content: Row(
+          children: [
+            TextButton(
+              onPressed: () => {
+                appProvider.deleteStudentById(student.id!),
+                Navigator.pop(context),
+              },
+              child: const Text('Yes'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('No'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAddDialog(StudentProvider appProvider) {
     final nameController = TextEditingController();
     final ageController = TextEditingController();
@@ -82,80 +110,9 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
               if (mounted) {
                 Navigator.pop(context);
-                // UI updates automatically thanks to StreamBuilder!
               }
             },
             child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditDialog(StudentProvider appProvider, Student student) {
-    // 1. Aquí ya estás asignando el valor inicial correctamente
-    final nameController = TextEditingController(text: student.name);
-    final ageController = TextEditingController(text: student.age.toString());
-
-    showDialog(
-      context: this.context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Edit Student ${student.name}"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: nameController,
-              // initialValue: name, <-- ELIMINADO PARA EVITAR EL ERROR
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'Enter student name',
-              ),
-              textCapitalization: TextCapitalization.words,
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: ageController,
-              // initialValue: '$age', <-- ELIMINADO PARA EVITAR EL ERROR
-              decoration: const InputDecoration(
-                labelText: 'Age',
-                hintText: 'Enter student age',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              // ... resto de tu lógica de guardado
-              if (nameController.text.isEmpty || ageController.text.isEmpty) {
-                // SnackBar...
-                return;
-              }
-
-              int? ageInput = int.tryParse(ageController.text);
-              if (ageInput == null || ageInput <= 0) {
-                // SnackBar...
-                return;
-              }
-
-              Student newStudent = student.copyWith(
-                name: nameController.text,
-                age: ageInput,
-              );
-
-              await appProvider.updateStudent(newStudent);
-              Navigator.pop(
-                context,
-              ); // Importante cerrar el diálogo al terminar
-            },
-            child: const Text("Save"),
           ),
         ],
       ),
@@ -225,11 +182,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
               IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () async {
-                  // Delete the student when the button is pressed
-                  await appProvider.deleteStudentById(student.id!);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('\${student.name} deleted')),
-                  );
+                  _showDeleteConfirm(appProvider, context, student);
                 },
               ),
               IconButton(
